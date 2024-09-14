@@ -1,0 +1,239 @@
+SELECT * FROM taxi.taxi_set;
+
+/*Average Fare Per Kilometer*/
+SELECT AVG(total_fare_new / distance_traveled_Km) AS avg_fare_per_km
+FROM taxi.taxi_set;
+
+/*Average Tip Amount*/
+SELECT AVG(tip) AS average_tip
+FROM taxi.taxi_set;
+
+/*Total Revenue from Surge Pricing*/
+SELECT SUM(total_fare_new) AS total_revenue_with_surge
+FROM taxi.taxi_set
+WHERE surge_applied > 1;
+
+/*Impact of Number of Passengers on Total Fare*/
+SELECT num_of_passengers, AVG(total_fare_new) AS avg_total_fare
+FROM taxi.taxi_set
+GROUP BY num_of_passengers
+ORDER BY num_of_passengers;
+
+/*Distribution of Trips by Trip Duration (in Hours)*/
+SELECT trip_duration_hr, COUNT(*) AS trip_count
+FROM taxi.taxi_set
+GROUP BY trip_duration_hr
+ORDER BY trip_duration_hr;
+
+/* Average Speed Distribution*/
+SELECT KPH, COUNT(*) AS trip_count
+FROM taxi.taxi_set
+GROUP BY KPH
+ORDER BY KPH;
+
+/*Total Wait Time Cost*/
+SELECT SUM(wait_time_cost) AS total_wait_time_cost
+FROM taxi.taxi_set;
+
+/*Average Miscellaneous Fees*/
+SELECT AVG(miscellaneous_fees) AS avg_misc_fees
+FROM taxi.taxi_set;
+
+/*Average Fare by Surge Multiplier*/
+SELECT surge_applied, AVG(total_fare_new) AS avg_total_fare
+FROM taxi.taxi_set
+GROUP BY surge_applied
+ORDER BY surge_applied;
+
+/*Average Distance Traveled Per Trip*/
+SELECT AVG(distance_traveled_Km) AS avg_distance_traveled
+FROM taxi.taxi_set;
+
+/*Top 10 Longest Trips*/
+SELECT *
+FROM taxi.taxi_set
+ORDER BY trip_duration_sec DESC
+LIMIT 10;
+
+/*Distribution of Trips by Speed Ranges*/
+SELECT
+    CASE
+        WHEN KPH < 20 THEN '< 20 KPH'
+        WHEN KPH BETWEEN 20 AND 40 THEN '20-40 KPH'
+        WHEN KPH BETWEEN 40 AND 60 THEN '40-60 KPH'
+        WHEN KPH BETWEEN 60 AND 80 THEN '60-80 KPH'
+        ELSE '> 80 KPH'
+    END AS speed_range,
+    COUNT(*) AS trip_count
+FROM taxi.taxi_set
+GROUP BY speed_range
+ORDER BY speed_range;
+
+/*Total Miscellaneous Fees Collected*/
+SELECT SUM(miscellaneous_fees) AS total_misc_fees
+FROM taxi.taxi_set;
+
+/*Average Distance Traveled Based on Surge Pricing*/
+SELECT
+    CASE WHEN surge_applied > 1 THEN 'Surge Applied' ELSE 'No Surge' END AS surge_status,
+    AVG(distance_traveled_Km) AS avg_distance
+FROM taxi.taxi_set
+GROUP BY surge_status;
+
+/*Average Wait Time Cost Based on Number of Passengers*/
+SELECT num_of_passengers, AVG(wait_time_cost) AS avg_wait_time_cost
+FROM taxi.taxi_set
+GROUP BY num_of_passengers
+ORDER BY num_of_passengers;
+
+/*Identify High Operational Cost Trips*/
+SELECT *,
+       (wait_time_cost + distance_cost + miscellaneous_fees) AS total_operational_cost,
+       (total_fare_new - (wait_time_cost + distance_cost + miscellaneous_fees)) AS profit
+FROM taxi.taxi_set
+WHERE (wait_time_cost + distance_cost + miscellaneous_fees) > total_fare_new
+ORDER BY total_operational_cost DESC;
+
+/*Calculate Total Operational Costs*/
+SELECT
+    SUM(wait_time_cost + distance_cost + miscellaneous_fees) AS total_operational_costs,
+    SUM(total_fare_new) AS total_revenue,
+    (SUM(total_fare_new) - SUM(wait_time_cost + distance_cost + miscellaneous_fees)) AS total_profit
+FROM taxi.taxi_set;
+
+/*Analyze Operational Costs by Number of Passengers*/
+SELECT
+    num_of_passengers,
+    COUNT(*) AS trip_count,
+    SUM(wait_time_cost + distance_cost + miscellaneous_fees) AS total_operational_costs,
+    SUM(total_fare_new) AS total_revenue,
+    (SUM(total_fare_new) - SUM(wait_time_cost + distance_cost + miscellaneous_fees)) AS total_profit,
+    (SUM(total_fare_new) - SUM(wait_time_cost + distance_cost + miscellaneous_fees)) / COUNT(*) AS avg_profit_per_trip
+FROM taxi.taxi_set
+GROUP BY num_of_passengers
+ORDER BY avg_profit_per_trip DESC;
+
+/*Evaluate Impact of Surge Pricing on Profitability*/
+SELECT
+    surge_applied,
+    COUNT(*) AS trip_count,
+    SUM(wait_time_cost + distance_cost + miscellaneous_fees) AS total_operational_costs,
+    SUM(total_fare_new) AS total_revenue,
+    (SUM(total_fare_new) - SUM(wait_time_cost + distance_cost + miscellaneous_fees)) AS total_profit,
+    (SUM(total_fare_new) - SUM(wait_time_cost + distance_cost + miscellaneous_fees)) / COUNT(*) AS avg_profit_per_trip
+FROM taxi.taxi_set
+GROUP BY surge_applied
+ORDER BY avg_profit_per_trip DESC;
+
+/*Identify Trips with High Wait Time Costs*/
+SELECT *
+FROM taxi.taxi_set
+WHERE wait_time_cost > (SELECT AVG(wait_time_cost) FROM taxi.taxi_set)
+ORDER BY wait_time_cost DESC;
+
+/*Analyze Profitability by Trip Duration*/
+SELECT
+    trip_duration_min,
+    COUNT(*) AS trip_count,
+    AVG(wait_time_cost + distance_cost + miscellaneous_fees) AS avg_operational_cost,
+    AVG(total_fare_new) AS avg_revenue,
+    (AVG(total_fare_new) - AVG(wait_time_cost + distance_cost + miscellaneous_fees)) AS avg_profit
+FROM taxi.taxi_set
+GROUP BY trip_duration_min
+ORDER BY avg_profit DESC;
+
+/*Assess Average Speed (KPH) Impact on Efficiency*/
+SELECT
+    KPH,
+    COUNT(*) AS trip_count,
+    AVG(wait_time_cost + distance_cost + miscellaneous_fees) AS avg_operational_cost,
+    AVG(total_fare_new) AS avg_revenue,
+    (AVG(total_fare_new) - AVG(wait_time_cost + distance_cost + miscellaneous_fees)) AS avg_profit
+FROM taxi.taxi_set
+GROUP BY KPH
+ORDER BY avg_profit DESC;
+
+/*Calculate Operational Efficiency Ratio*/
+SELECT
+    SUM(total_fare_new) AS total_revenue,
+    SUM(wait_time_cost + distance_cost + miscellaneous_fees) AS total_operational_costs,
+    (SUM(total_fare_new) / SUM(wait_time_cost + distance_cost + miscellaneous_fees)) AS efficiency_ratio
+FROM taxi.taxi_set;
+
+/*Forecast Impact of Reducing Operational Costs by 25%*/
+SELECT
+    SUM(wait_time_cost + distance_cost + miscellaneous_fees) AS current_operational_costs,
+    SUM(wait_time_cost + distance_cost + miscellaneous_fees) * 0.75 AS reduced_operational_costs,
+    SUM(total_fare_new) - (SUM(wait_time_cost + distance_cost + miscellaneous_fees) * 0.75) AS projected_profit
+FROM taxi.taxi_set;
+
+/*Identify Inefficient Speed Ranges*/
+SELECT
+    CASE
+        WHEN KPH < 20 THEN '< 20 KPH'
+        WHEN KPH BETWEEN 20 AND 40 THEN '20-40 KPH'
+        WHEN KPH BETWEEN 40 AND 60 THEN '40-60 KPH'
+        WHEN KPH BETWEEN 60 AND 80 THEN '60-80 KPH'
+        ELSE '> 80 KPH'
+    END AS speed_range,
+    COUNT(*) AS trip_count,
+    AVG(wait_time_cost + distance_cost + miscellaneous_fees) AS avg_operational_cost,
+    AVG(total_fare_new) AS avg_revenue,
+    (AVG(total_fare_new) - AVG(wait_time_cost + distance_cost + miscellaneous_fees)) AS avg_profit
+FROM taxi.taxi_set
+GROUP BY speed_range
+ORDER BY avg_profit DESC;
+
+/*Evaluate Distance Traveled Impact on Costs*/
+SELECT
+    distance_traveled_Km,
+    COUNT(*) AS trip_count,
+    AVG(wait_time_cost + distance_cost + miscellaneous_fees) AS avg_operational_cost,
+    AVG(total_fare_new) AS avg_revenue,
+    (AVG(total_fare_new) - AVG(wait_time_cost + distance_cost + miscellaneous_fees)) AS avg_profit
+FROM taxi.taxi_set
+GROUP BY distance_traveled_Km
+ORDER BY avg_profit DESC;
+
+/*Optimize Miscellaneous Fees*/
+SELECT *
+FROM taxi.taxi_set
+WHERE miscellaneous_fees > (SELECT AVG(miscellaneous_fees) FROM taxi.taxi_set)
+ORDER BY miscellaneous_fees DESC;
+
+/*Analyze Fare Components*/
+SELECT
+    SUM(distance_cost) AS total_distance_cost,
+    SUM(wait_time_cost) AS total_wait_time_cost,
+    SUM(miscellaneous_fees) AS total_misc_fees,
+    SUM(tip) AS total_tips,
+    SUM(fare_w_flag) AS total_fare_without_flags,
+    SUM(total_fare_new) AS total_revenue
+FROM taxi.taxi_set;
+
+/*Determine Profitability by Surge Multiplier*/
+SELECT
+    surge_applied,
+    COUNT(*) AS trip_count,
+    AVG(wait_time_cost + distance_cost + miscellaneous_fees) AS avg_operational_cost,
+    AVG(total_fare_new) AS avg_revenue,
+    (AVG(total_fare_new) - AVG(wait_time_cost + distance_cost + miscellaneous_fees)) AS avg_profit
+FROM taxi.taxi_set
+GROUP BY surge_applied
+ORDER BY surge_applied;
+
+/*Calculate Average Profit per Trip*/
+SELECT
+    AVG(total_fare_new - (wait_time_cost + distance_cost + miscellaneous_fees)) AS avg_profit_per_trip
+FROM taxi.taxi_set;
+
+
+
+
+
+
+
+
+
+
+
